@@ -33,6 +33,15 @@ static unsigned long lastPrint = 0; // Keep track of print time
 // http://www.ngdc.noaa.gov/geomag-web/#declination
 //#define DECLINATION -8.58 // Declination (degrees) in Boulder, CO.
 
+////////////////////////
+// SoftwareSerial GPS //
+////////////////////////
+SoftwareSerial gpsSerial(12,8);
+const int sentenceSize = 80;
+boolean readGPS = true;
+char curChar = ' ';
+char prevChar = ' ';
+
 File myFile;
 int numWrites = 0;
 
@@ -68,11 +77,14 @@ void setup() {
                   "if the board jumpers are.");
     while (1);
   }//end if
+  delay(1000);
 
   //for SD card
   // Open serial communications and wait for port to open:
   Serial.begin(9600);
+  gpsSerial.begin(9600);
   Serial.println("imu initialized");
+  Serial.println("gps initialized");
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
@@ -122,10 +134,35 @@ void loop() {
       myFile.print("\n");
     
       lastPrint = millis(); // Update lastPrint time
-      numWrites += 1;
       fileWritten = true;
     }
-  } else {
+
+    if(gpsSerial.available()){
+      readGPS = true;
+      while(readGPS){
+        if(gpsSerial.available()){
+          prevChar = curChar;
+          curChar = (char)gpsSerial.read();
+          if(curChar == '\n' && prevChar != '\r'){
+            myFile.print(" NMEA new line without carriage return");
+            myFile.print('\n');
+          } else if(curChar == '\n' && prevChar == '\r'){
+            //myFile.print("end condition met");
+            myFile.print('\n');
+            readGPS = false;
+          } else if(curChar == '$' && prevChar != '\n'){
+            myFile.print("  NMEA string ended prematurely");
+            myFile.print('\n');
+            myFile.print(curChar);
+          } else {
+            myFile.print(curChar);  
+          }
+        }
+      }
+    }
+
+    
+  } else {//if(switchState == HIGH){
     digitalWrite(ledPin, LOW);
 
     if(fileWritten){

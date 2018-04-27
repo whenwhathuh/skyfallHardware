@@ -88,6 +88,7 @@ void setup() {
   // so you have to close this one before opening another.
   myFile = SD.open("test.txt", FILE_WRITE);
   delay(1000);
+  Serial.println("waiting to collect data...");
 }//end setup()
 
 
@@ -95,7 +96,7 @@ void loop() {
   switchState = digitalRead(switchPin);
 
   if(switchState == HIGH){
-    delay(1000);
+    //delay(1000);
     digitalWrite(ledPin, HIGH);
     
     Serial.begin(115200);
@@ -108,18 +109,20 @@ void loop() {
     }
   
     if ((lastPrint + PRINT_SPEED) < millis()){//write to SD here
+      float ax = imu.calcAccel(imu.ax);
+      float ay = imu.calcAccel(imu.ay);
+      float az = imu.calcAccel(imu.az);
       Serial.begin(9600);
       myFile.print("accelerometer: ");
-      myFile.print(imu.calcAccel(imu.ax));
+      myFile.print(ax);
       myFile.print(", ");
-      myFile.print(imu.calcAccel(imu.ay));
+      myFile.print(ay);
       myFile.print(", ");
-      myFile.print(imu.calcAccel(imu.az));
+      myFile.print(az);
       myFile.print("\n");
     
       lastPrint = millis(); // Update lastPrint time
       numWrites += 1;
-      Serial.println(numWrites);
       fileWritten = true;
     }
   } else {
